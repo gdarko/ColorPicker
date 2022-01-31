@@ -66,7 +66,6 @@ void MainWindow::timerEvent(QTimerEvent *event)
     ui->posX->document()->setPlainText(mousePointXStr);
     ui->posY->document()->setPlainText(mousePointYStr);
 
-
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
     QColor * rgbColors = new QColor(rgbValue);
@@ -76,7 +75,6 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QString cB = QString::fromStdString(std::to_string(rgbColors->blue()));
     QString colorName = "Not found";
     currentColor = rgbColors->name();
-    qInfo() << "Finding color for: " + currentColor.toLower();
     if(colorNames->count() > 0) {
         colorName = colorNames->contains(currentColor.toLower()) ? colorNames->find(currentColor.toLower()).value().toString() : colorName;
     }
@@ -111,7 +109,7 @@ void MainWindow::handleCopy()
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(currentColor, QClipboard::Clipboard);
 
-    qInfo() << "Color Copied.";
+    qInfo() << "Clipboard: Color HexCode Copied.";
 
 #if defined(Q_OS_LINUX)
     QThread::msleep(1); //workaround for copied text not being available...
@@ -124,7 +122,7 @@ QVariantMap * MainWindow::getColorNameMap()
 
     QFile *file_obj = new QFile(QString::fromStdString("res/colors.json"));
     if (!file_obj->open(QIODevice::ReadOnly)) {
-        qDebug() << "Failed to open color map.";
+        qDebug() << "Color Map: Failed to open json.";
         return map;
     }
 
@@ -136,18 +134,18 @@ QVariantMap * MainWindow::getColorNameMap()
     auto json_doc = QJsonDocument::fromJson(json_string.toUtf8());
 
     if (json_doc.isNull()) {
-        qDebug() << "Failed to create JSON doc.";
+        qDebug() << "Color Map: Failed to create JSON doc.";
         return map;
     }
     if (!json_doc.isObject()) {
-        qDebug() << "JSON is not an object.";
+        qDebug() << "Color Map: JSON is not an object.";
         return map;
     }
 
     QJsonObject json_obj = json_doc.object();
 
     if (json_obj.isEmpty()) {
-        qDebug() << "JSON object is empty.";
+        qDebug() << "Color Map: JSON object is empty.";
         return map;
     }
 
