@@ -9,6 +9,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
     QScreen *screen = a.primaryScreen();
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     w.setScreen(screen);
+    w.setWindowIcon(QIcon("res/icon@24x24.png"));
 
     w.show();
     return a.exec();

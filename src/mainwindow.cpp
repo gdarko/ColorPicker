@@ -13,17 +13,17 @@
 #include <QShortcut>
 #include <QClipboard>
 #include <QPalette>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMap>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-    this->setFixedSize(QSize(600, 410));
-
+    this->setFixedSize(QSize(500, 340));
     timerId = startTimer(50);
-
     this->bootStrap();
-
 }
 
 MainWindow::~MainWindow()
@@ -37,6 +37,11 @@ void MainWindow::timerEvent(QTimerEvent *event)
 {
 
     QPoint cursor = QCursor::pos();
+
+    if(frameGeometry().contains(cursor)) {
+        qInfo() << "Prevented detection over the main window.";
+        return;
+    }
 
     if(mousePointx && mousePointy ) {
         if(mousePointx == cursor.x() && mousePointy == cursor.y()) {
@@ -64,12 +69,17 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QString cR = QString::fromStdString(std::to_string(rgbColors->red()));
     QString cG = QString::fromStdString(std::to_string(rgbColors->green()));
     QString cB = QString::fromStdString(std::to_string(rgbColors->blue()));
+    QString colorName = "Not found";
     currentColor = rgbColors->name();
+    qInfo() << "Finding color for: " + currentColor.toLower();
+    if(colorNames) {
+        colorName = colorNames->contains(currentColor.toLower()) ? colorNames->find(currentColor.toLower()).value().toString() : colorName;
+    }
 
     ui->numR->document()->setPlainText(cR);
     ui->numG->document()->setPlainText(cG);
     ui->numB->document()->setPlainText(cB);
-    ui->colorName->document()->setPlainText("Not found");
+    ui->colorName->document()->setPlainText(colorName);
     ui->hexCode->document()->setPlainText(currentColor);
 
 
@@ -86,6 +96,8 @@ void MainWindow::bootStrap()
 {
     QShortcut *shortcut = new QShortcut(QKeySequence("F5"), this);
     QObject::connect(shortcut,&QShortcut::activated,this,&MainWindow::handleCopy);
+
+    colorNames = this->getColorNameMap();
 }
 
 
@@ -94,10 +106,48 @@ void MainWindow::handleCopy()
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(currentColor, QClipboard::Clipboard);
 
-    qInfo() << "Copied.";
+    qInfo() << "Color Copied.";
 
 #if defined(Q_OS_LINUX)
     QThread::msleep(1); //workaround for copied text not being available...
 #endif
 }
+
+QVariantMap * MainWindow::getColorNameMap()
+{
+    QVariantMap *map = new QVariantMap();
+
+    QFile *file_obj = new QFile(QString::fromStdString("res/colors.json"));
+    if (!file_obj->open(QIODevice::ReadOnly)) {
+        qDebug() << "Failed to open color map.";
+        return map;
+    }
+
+    QTextStream file_text(file_obj);
+    QString json_string;
+    json_string = file_text.readAll();
+    file_obj->close();
+
+    auto json_doc = QJsonDocument::fromJson(json_string.toUtf8());
+
+    if (json_doc.isNull()) {
+        qDebug() << "Failed to create JSON doc.";
+        return map;
+    }
+    if (!json_doc.isObject()) {
+        qDebug() << "JSON is not an object.";
+        return map;
+    }
+
+    QJsonObject json_obj = json_doc.object();
+
+    if (json_obj.isEmpty()) {
+        qDebug() << "JSON object is empty.";
+        return map;
+    }
+
+    *map = json_obj.toVariantMap();
+    return map;
+}
+
 

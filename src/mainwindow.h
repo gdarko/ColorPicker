@@ -31,7 +31,9 @@ protected:
     void timerEvent(QTimerEvent *event);
     void handleCopy();
     void bootStrap();
+    QVariantMap * getColorNameMap();
     QPixmap screenshot;
+    QVariantMap * colorNames;
 
 };
 #endif // MAINWINDOW_H
