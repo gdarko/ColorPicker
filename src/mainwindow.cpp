@@ -38,7 +38,12 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     QPoint cursor = QCursor::pos();
 
-    if(frameGeometry().contains(cursor)) {
+    if(this->isMinimized()) {
+        qInfo() << "Prevented detection when minimized.";
+        return;
+    }
+
+    if(this->frameGeometry().contains(cursor)) {
         qInfo() << "Prevented detection over the main window.";
         return;
     }
@@ -72,7 +77,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QString colorName = "Not found";
     currentColor = rgbColors->name();
     qInfo() << "Finding color for: " + currentColor.toLower();
-    if(colorNames) {
+    if(colorNames->count() > 0) {
         colorName = colorNames->contains(currentColor.toLower()) ? colorNames->find(currentColor.toLower()).value().toString() : colorName;
     }
 
