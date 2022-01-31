@@ -20,8 +20,7 @@ int main(int argc, char *argv[])
         }
     }
     MainWindow w;
-    w.setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint);
-
+    w.setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     w.setScreen(screen);
 
     w.show();
