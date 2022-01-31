@@ -41,6 +41,11 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     QPoint cursor = QCursor::pos();
 
+    if(this->isFrozen) {
+        qInfo() << "Prevented detection: Frozen.";
+        return;
+    }
+
     if(this->isMinimized()) {
         qInfo() << "Prevented detection: Minimized.";
         return;
@@ -100,14 +105,22 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 void MainWindow::bootStrap()
 {
-    QShortcut *shortcut = new QShortcut(QKeySequence("F5"), this);
-    QObject::connect(shortcut,&QShortcut::activated,this,&MainWindow::handleCopy);
+    this->isFrozen = false;
+
+    QShortcut *shortcutF5 = new QShortcut(QKeySequence("F5"), this);
+    QObject::connect(shortcutF5,&QShortcut::activated,this,&MainWindow::handleCopyHex);
+
+    QShortcut *shortcutF6 = new QShortcut(QKeySequence("F6"), this);
+    QObject::connect(shortcutF6,&QShortcut::activated,this,&MainWindow::handleCopyRgb);
+
+    QShortcut *shortcutF7 = new QShortcut(QKeySequence("F7"), this);
+    QObject::connect(shortcutF7,&QShortcut::activated,this,&MainWindow::handleFreeze);
 
     colorNames = this->getColorNameMap();
 }
 
 
-void MainWindow::handleCopy()
+void MainWindow::handleCopyHex()
 {
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(currentColor, QClipboard::Clipboard);
@@ -117,6 +130,26 @@ void MainWindow::handleCopy()
 #if defined(Q_OS_LINUX)
     QThread::msleep(1); //workaround for copied text not being available...
 #endif
+}
+
+void MainWindow::handleCopyRgb()
+{
+    // TODO: Implement.
+    QClipboard* clipboard = QApplication::clipboard();
+    // clipboard->setText(currentColor, QClipboard::Clipboard);
+
+    qInfo() << "Clipboard: Color RGB Code Copied.";
+
+#if defined(Q_OS_LINUX)
+    QThread::msleep(1); //workaround for copied text not being available...
+#endif
+}
+
+void MainWindow::handleFreeze()
+{
+    this->isFrozen = !this->isFrozen;
+    qInfo() << QString("State:%1").arg( this->isFrozen ? QString("Frozen") : QString("Detecting"));
+
 }
 
 QVariantMap * MainWindow::getColorNameMap()

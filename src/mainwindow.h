@@ -22,6 +22,7 @@ private:
     int mousePointx;
     int mousePointy;
     int timerId;
+    bool isFrozen;
 
     QString currentColor;
 
@@ -29,7 +30,9 @@ private:
 
 protected:
     void timerEvent(QTimerEvent *event);
-    void handleCopy();
+    void handleCopyHex();
+    void handleCopyRgb();
+    void handleFreeze();
     void bootStrap();
     QVariantMap * getColorNameMap();
     QPixmap screenshot;
