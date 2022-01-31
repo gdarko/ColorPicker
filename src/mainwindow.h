@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "pointercolor.h"
 #include <QMainWindow>
 #include <QTimerEvent>
 #include <QPixmap>
@@ -22,21 +23,20 @@ private:
     int mousePointx;
     int mousePointy;
     int timerId;
-    bool isFrozen;
-
-    QString currentColor;
-
+    bool isPaused;
     Ui::MainWindow *ui;
 
 protected:
     void timerEvent(QTimerEvent *event);
     void handleCopyHex();
     void handleCopyRgb();
-    void handleFreeze();
+    void handlePause();
     void bootStrap();
     QVariantMap * getColorNameMap();
     QPixmap screenshot;
     QVariantMap * colorNames;
+
+    PointerColor * current;
 
 };
 #endif // MAINWINDOW_H

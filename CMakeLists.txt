@@ -29,6 +29,7 @@ set(IDENTIFIER "com.ideologix.colorpicker")
 set(SOURCE_FILES
     src/main.cpp
     src/mainwindow.cpp
+    src/pointercolor.cpp
 )
 
 add_project_meta(META_FILES_TO_INCLUDE)

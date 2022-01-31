@@ -1,3 +1,4 @@
+#include "pointercolor.h"
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
@@ -31,7 +32,10 @@ MainWindow::~MainWindow()
     killTimer(timerId);
     delete ui;
     if(colorNames) {
-        delete colorNames;
+        delete this->colorNames;
+    }
+    if(current) {
+        delete this->current;
     }
 }
 
@@ -41,8 +45,8 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     QPoint cursor = QCursor::pos();
 
-    if(this->isFrozen) {
-        qInfo() << "Prevented detection: Frozen.";
+    if(this->isPaused) {
+        qInfo() << "Prevented detection: Paused.";
         return;
     }
 
@@ -68,31 +72,17 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     screenshot = this->screen()->grabWindow(0);
 
-    QString mousePointXStr = QString::fromStdString(std::to_string(mousePointx));
-    QString mousePointYStr = QString::fromStdString(std::to_string(mousePointy));
-
-    ui->posX->document()->setPlainText(mousePointXStr);
-    ui->posY->document()->setPlainText(mousePointYStr);
-
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
-    QColor * rgbColors = new QColor(rgbValue);
+    this->current = new PointerColor(cursor, rgbValue, this->colorNames);
 
-    QString cR = QString::fromStdString(std::to_string(rgbColors->red()));
-    QString cG = QString::fromStdString(std::to_string(rgbColors->green()));
-    QString cB = QString::fromStdString(std::to_string(rgbColors->blue()));
-    QString colorName = "Not found";
-    currentColor = rgbColors->name();
-    if(colorNames->count() > 0) {
-        colorName = colorNames->contains(currentColor.toLower()) ? colorNames->find(currentColor.toLower()).value().toString() : colorName;
-    }
-
-    ui->numR->document()->setPlainText(cR);
-    ui->numG->document()->setPlainText(cG);
-    ui->numB->document()->setPlainText(cB);
-    ui->colorName->document()->setPlainText(colorName);
-    ui->hexCode->document()->setPlainText(currentColor);
-
+    ui->posX->document()->setPlainText(this->current->cursorX);
+    ui->posY->document()->setPlainText(this->current->cursorY);
+    ui->numR->document()->setPlainText(this->current->colorRed);
+    ui->numG->document()->setPlainText(this->current->colorGreen);
+    ui->numB->document()->setPlainText(this->current->colorBlue);
+    ui->hexCode->document()->setPlainText(this->current->colorHex);
+    ui->colorName->document()->setPlainText(this->current->colorName);
 
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, rgbValue);
@@ -105,7 +95,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 void MainWindow::bootStrap()
 {
-    this->isFrozen = false;
+    this->isPaused = false;
 
     QShortcut *shortcutF5 = new QShortcut(QKeySequence("F5"), this);
     QObject::connect(shortcutF5,&QShortcut::activated,this,&MainWindow::handleCopyHex);
@@ -114,7 +104,7 @@ void MainWindow::bootStrap()
     QObject::connect(shortcutF6,&QShortcut::activated,this,&MainWindow::handleCopyRgb);
 
     QShortcut *shortcutF7 = new QShortcut(QKeySequence("F7"), this);
-    QObject::connect(shortcutF7,&QShortcut::activated,this,&MainWindow::handleFreeze);
+    QObject::connect(shortcutF7,&QShortcut::activated,this,&MainWindow::handlePause);
 
     colorNames = this->getColorNameMap();
 }
@@ -123,7 +113,7 @@ void MainWindow::bootStrap()
 void MainWindow::handleCopyHex()
 {
     QClipboard* clipboard = QApplication::clipboard();
-    clipboard->setText(currentColor, QClipboard::Clipboard);
+    clipboard->setText(this->current->colorHex, QClipboard::Clipboard);
 
     qInfo() << "Clipboard: Color HexCode Copied.";
 
@@ -136,7 +126,7 @@ void MainWindow::handleCopyRgb()
 {
     // TODO: Implement.
     QClipboard* clipboard = QApplication::clipboard();
-    // clipboard->setText(currentColor, QClipboard::Clipboard);
+    clipboard->setText(this->current->colorRGB, QClipboard::Clipboard);
 
     qInfo() << "Clipboard: Color RGB Code Copied.";
 
@@ -145,10 +135,10 @@ void MainWindow::handleCopyRgb()
 #endif
 }
 
-void MainWindow::handleFreeze()
+void MainWindow::handlePause()
 {
-    this->isFrozen = !this->isFrozen;
-    qInfo() << QString("State:%1").arg( this->isFrozen ? QString("Frozen") : QString("Detecting"));
+    this->isPaused = !this->isPaused;
+    qInfo() << QString("State:%1").arg( this->isPaused ? QString("Paused") : QString("Detecting"));
 
 }
 
