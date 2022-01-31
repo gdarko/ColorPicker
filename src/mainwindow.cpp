@@ -30,6 +30,9 @@ MainWindow::~MainWindow()
 {
     killTimer(timerId);
     delete ui;
+    if(colorNames) {
+        delete colorNames;
+    }
 }
 
 
