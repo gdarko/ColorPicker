@@ -39,18 +39,18 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QPoint cursor = QCursor::pos();
 
     if(this->isMinimized()) {
-        qInfo() << "Prevented detection when minimized.";
+        qInfo() << "Prevented detection: Minimized.";
         return;
     }
 
     if(this->frameGeometry().contains(cursor)) {
-        qInfo() << "Prevented detection over the main window.";
+        qInfo() << "Prevented detection: Cusor in main window.";
         return;
     }
 
     if(mousePointx && mousePointy ) {
         if(mousePointx == cursor.x() && mousePointy == cursor.y()) {
-            qInfo() << "Nothing changed. Exiting.";
+            qInfo() << "Prevented detection: Cursor idle.";
             return;
         }
     }
