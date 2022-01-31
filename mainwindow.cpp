@@ -18,9 +18,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 {
     ui->setupUi(this);
 
-    this->setMouseTracking(true);
-
-    this->setFixedSize(QSize(750, 400));
+    this->setFixedSize(QSize(600, 410));
 
     timerId = startTimer(50);
 
@@ -49,8 +47,6 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     mousePointx = cursor.x();
     mousePointy = cursor.y();
-
-
 
     screenshot = this->screen()->grabWindow(0);
 
