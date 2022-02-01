@@ -1,1 +1,4 @@
 CMakeLists.txt.user
+CMakeFiles/
+CMakeCache.txt
+windows_metafile.rc
