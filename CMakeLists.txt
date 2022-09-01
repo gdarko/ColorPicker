@@ -37,15 +37,15 @@ add_project_meta(META_FILES_TO_INCLUDE)
 #set(RESOURCE_FILES project.qrc)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 # source_group("UI Files" FILES ${UI_FILES})
 
 add_executable(${PROJECT_NAME} ${OS_BUNDLE} # Expands to WIN32 or MACOS_BUNDLE depending on OS
     ${SOURCE_FILES} ${META_FILES_TO_INCLUDE} ${RESOURCE_FILES}
 )
-qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+#qt6_add_translations (QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 
 target_precompile_headers(${PROJECT_NAME} INTERFACE QtWidgets.h)
 
