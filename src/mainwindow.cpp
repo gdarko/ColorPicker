@@ -5,12 +5,10 @@
 #include <QMouseEvent>
 #include <QTextEdit>
 
-#include <QLocale>
 #include <QDebug>
 #include <QCursor>
 #include <QPixmap>
 #include <QColor>
-#include <QBrush>
 #include <QShortcut>
 #include <QClipboard>
 #include <QPalette>
@@ -18,6 +16,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMap>
+#include <QWindow>
+#include <QApplication>
+
+#include <QThread>
+
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -56,13 +59,13 @@ void MainWindow::timerEvent(QTimerEvent *event)
     }
 
     if(this->frameGeometry().contains(cursor)) {
-        qInfo() << "Prevented detection: Cusor in main window.";
+        qInfo() << "Prevented detection: Cursor in main window.";
         return;
     }
 
     if(mousePointx && mousePointy ) {
         if(mousePointx == cursor.x() && mousePointy == cursor.y()) {
-            qInfo() << "Prevented detection: Cursor idle.";
+            //qInfo() << "Prevented detection: Cursor idle.";
             return;
         }
     }
@@ -70,8 +73,18 @@ void MainWindow::timerEvent(QTimerEvent *event)
     mousePointx = cursor.x();
     mousePointy = cursor.y();
 
-    screenshot = this->screen()->grabWindow(0);
 
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (const QWindow *window = windowHandle()) {
+        screen = window->screen();
+    }
+
+    if(!screen) {
+        qInfo() << "Error: Unable to obtain screen";
+        return;
+    }
+
+    screenshot = screen->grabWindow(0);
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
     this->current = new PointerColor(cursor, rgbValue, this->colorNames);
