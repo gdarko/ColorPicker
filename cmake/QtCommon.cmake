@@ -1,20 +1,30 @@
 macro(fix_project_version)
-if (NOT PROJECT_VERSION_PATCH)
-    set(PROJECT_VERSION_PATCH 0)
-endif()
 if (NOT PROJECT_VERSION_MAJOR)
-    set(PROJECT_VERSION_MAJOR 0)
+    set(PROJECT_VERSION_MAJOR 1)
 endif()
 if (NOT PROJECT_VERSION_MINOR)
     set(PROJECT_VERSION_MINOR 0)
 endif()
-
+if (NOT PROJECT_VERSION_PATCH)
+    set(PROJECT_VERSION_PATCH 0)
+endif()
 if (NOT PROJECT_VERSION_TWEAK)
     set(PROJECT_VERSION_TWEAK 0)
 endif()
 endmacro()
 
 macro(add_project_meta FILES_TO_INCLUDE)
+
+if (NOT ICON_NAME)
+    set(ICON_NAME AppIcon)
+endif()
+
+if (APPLE)
+    set(ICON_FILE ${PROJECT_SOURCE_DIR}/res/${ICON_NAME}.icns)
+elseif (WIN32)
+    set(ICON_FILE ${PROJECT_SOURCE_DIR}/res/${ICON_NAME}.ico)
+endif()
+
 
 if (WIN32)
     configure_file("${PROJECT_SOURCE_DIR}/cmake/windows_metafile.rc.in"
