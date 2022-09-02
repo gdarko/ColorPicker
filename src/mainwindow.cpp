@@ -162,7 +162,7 @@ QVariantMap * MainWindow::getColorNameMap()
 {
     QVariantMap *map = new QVariantMap();
 
-    QFile *file_obj = new QFile(QString::fromStdString("res/colors.json"));
+    QFile *file_obj = new QFile(QString::fromStdString(":/colorpicker/data/colors.json"));
     if (!file_obj->open(QIODevice::ReadOnly)) {
         qDebug() << "Color Map: Failed to open json.";
         return map;
