@@ -16,7 +16,7 @@ include(QtCommon)
 
 # Basic information about project
 
-project(ColorPicker VERSION 1.0)
+project(ColorPicker)
 
 # Set PROJECT_VERSION_PATCH and PROJECT_VERSION_TWEAK to 0 if not present, needed by add_project_meta
 fix_project_version()
@@ -34,7 +34,7 @@ set(SOURCE_FILES
 
 add_project_meta(META_FILES_TO_INCLUDE)
 
-#set(RESOURCE_FILES project.qrc)
+set(RESOURCE_FILES res/assets.qrc)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
@@ -45,11 +45,10 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 add_executable(${PROJECT_NAME} ${OS_BUNDLE} # Expands to WIN32 or MACOS_BUNDLE depending on OS
     ${SOURCE_FILES} ${META_FILES_TO_INCLUDE} ${RESOURCE_FILES}
 )
-#qt6_add_translations (QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 
 target_precompile_headers(${PROJECT_NAME} INTERFACE QtWidgets.h)
 
-target_link_libraries(${PROJECT_NAME} Qt6::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(ColorPicker)

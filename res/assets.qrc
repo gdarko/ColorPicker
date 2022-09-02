@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/colorpicker/icons">
+        <file>AppIcon.ico</file>
+        <file>AppIcon.icns</file>
+    </qresource>
+    <qresource prefix="/colorpicker/data">
+        <file>colors.json</file>
+    </qresource>
+</RCC>

@@ -7,6 +7,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/colorpicker/icons/AppIcon.ico"));
 
     QScreen *screen = a.primaryScreen();
 
