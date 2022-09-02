@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 {
     ui->setupUi(this);
     this->setFixedSize(QSize(500, 340));
-    timerId = startTimer(50);
+    timerId = startTimer(80);
     this->bootStrap();
 }
 
