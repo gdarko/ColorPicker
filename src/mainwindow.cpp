@@ -1,6 +1,6 @@
 #include "pointercolor.h"
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 #include <QMouseEvent>
 #include <QTextEdit>
@@ -18,8 +18,7 @@
 #include <QMap>
 #include <QWindow>
 #include <QApplication>
-
-#include <QThread>
+#include <QScreen>
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -74,6 +73,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
     mousePointy = cursor.y();
 
 
+#if defined(Q_OS_LINUX)
     QScreen *screen = QGuiApplication::primaryScreen();
     if (const QWindow *window = windowHandle()) {
         screen = window->screen();
@@ -83,8 +83,11 @@ void MainWindow::timerEvent(QTimerEvent *event)
         qInfo() << "Error: Unable to obtain screen";
         return;
     }
-
     screenshot = screen->grabWindow(0);
+#else
+    screenshot = this->screen()->grabWindow(0);
+#endif
+
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
     this->current = new PointerColor(cursor, rgbValue, this->colorNames);
