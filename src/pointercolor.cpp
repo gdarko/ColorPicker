@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022 Darko Gjorgjijoski <dg@darkog.com>
+
 #include "pointercolor.h"
 
 #include <QRgb>

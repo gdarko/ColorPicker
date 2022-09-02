@@ -30,6 +30,9 @@ set(SOURCE_FILES
     src/main.cpp
     src/mainwindow.cpp
     src/pointercolor.cpp
+    src/qguiappcurrentscreen.cpp
+    src/desktopinfo.cpp
+    src/screengrabber.cpp
 )
 
 add_project_meta(META_FILES_TO_INCLUDE)

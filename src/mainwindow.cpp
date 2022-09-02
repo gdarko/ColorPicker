@@ -1,3 +1,5 @@
+
+
 #include "pointercolor.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -19,6 +21,9 @@
 #include <QWindow>
 #include <QApplication>
 #include <QScreen>
+#include <QVariantMap>
+
+#include "screengrabber.h"
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -32,7 +37,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 MainWindow::~MainWindow()
 {
     killTimer(timerId);
-    delete ui;
+    if(ui) {
+         delete ui;
+    }
     if(colorNames) {
         delete this->colorNames;
     }
@@ -69,24 +76,23 @@ void MainWindow::timerEvent(QTimerEvent *event)
         }
     }
 
-    mousePointx = cursor.x();
-    mousePointy = cursor.y();
+    bool ok = true;
+    QScreen* screen;
 
+    QPoint globalCursorPos = QCursor::pos();
+    screen = QGuiApplication::screenAt(globalCursorPos);
+    screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
 
-#if defined(Q_OS_LINUX)
-    QScreen *screen = QGuiApplication::primaryScreen();
-    if (const QWindow *window = windowHandle()) {
-        screen = window->screen();
-    }
-
-    if(!screen) {
-        qInfo() << "Error: Unable to obtain screen";
+    if(!ok) {
+        qInfo() << "Unable to grab screen.";
         return;
+
     }
-    screenshot = screen->grabWindow(0);
-#else
-    screenshot = this->screen()->grabWindow(0);
-#endif
+
+    qreal pixelRatio = screen->devicePixelRatio();
+
+    mousePointx = cursor.x() * pixelRatio;
+    mousePointy = cursor.y() * pixelRatio;
 
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
@@ -113,13 +119,13 @@ void MainWindow::bootStrap()
 {
     this->isPaused = false;
 
-    QShortcut *shortcutF5 = new QShortcut(QKeySequence("F5"), this);
+    QShortcut *shortcutF5 = new QShortcut(QKeySequence("Ctrl+C"), this);
     QObject::connect(shortcutF5,&QShortcut::activated,this,&MainWindow::handleCopyHex);
 
-    QShortcut *shortcutF6 = new QShortcut(QKeySequence("F6"), this);
+    QShortcut *shortcutF6 = new QShortcut(QKeySequence("Ctrl+X"), this);
     QObject::connect(shortcutF6,&QShortcut::activated,this,&MainWindow::handleCopyRgb);
 
-    QShortcut *shortcutF7 = new QShortcut(QKeySequence("F7"), this);
+    QShortcut *shortcutF7 = new QShortcut(QKeySequence("P"), this);
     QObject::connect(shortcutF7,&QShortcut::activated,this,&MainWindow::handlePause);
 
     colorNames = this->getColorNameMap();
@@ -194,5 +200,3 @@ QVariantMap * MainWindow::getColorNameMap()
     *map = json_obj.toVariantMap();
     return map;
 }
-
-

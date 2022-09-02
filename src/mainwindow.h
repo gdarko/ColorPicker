@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022 Darko Gjorgjijoski <dg@darkog.com>
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -6,6 +9,7 @@
 #include <QTimerEvent>
 #include <QPixmap>
 #include <QString>
+#include <QVariantMap>
 
 
 QT_BEGIN_NAMESPACE
