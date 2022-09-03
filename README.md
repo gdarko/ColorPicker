@@ -4,7 +4,7 @@ ColorPicker is simple utility application useful if you want to obtain the color
 
 Just open the application, hover on anything and press CTRL+C. The hexcode will be copied in your clipboard.
 
-![image](https://user-images.githubusercontent.com/5760249/188268471-9bab0996-484c-4dc3-9bf7-7fb759ba0d09.png)
+![image](https://user-images.githubusercontent.com/5760249/188268716-6d6cddd7-06ff-4d70-a978-100fdaa01437.png)
 
 ### Shortcuts
 
