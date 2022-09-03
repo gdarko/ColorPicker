@@ -22,7 +22,10 @@
 #include <QApplication>
 #include <QScreen>
 #include <QVariantMap>
+#include <QDesktopServices>
+#include <QUrl>
 
+#include "dialogabout.h"
 #include "screengrabber.h"
 
 
@@ -46,6 +49,27 @@ MainWindow::~MainWindow()
     if(current) {
         delete this->current;
     }
+}
+
+void MainWindow::bootStrap()
+{
+    this->isPaused = false;
+
+    QShortcut *shortcutCpyHex = new QShortcut(QKeySequence("Ctrl+C"), this);
+    QObject::connect(shortcutCpyHex,&QShortcut::activated,this,&MainWindow::handleCopyHex);
+
+    QShortcut *shortcutCpyRGB = new QShortcut(QKeySequence("Ctrl+X"), this);
+    QObject::connect(shortcutCpyRGB,&QShortcut::activated,this,&MainWindow::handleCopyRgb);
+
+    QShortcut *shortcutPause = new QShortcut(QKeySequence("P"), this);
+    QObject::connect(shortcutPause,&QShortcut::activated,this,&MainWindow::handlePause);
+
+    QObject::connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(exitApp()));
+    QObject::connect(ui->btnAbout, SIGNAL(clicked()), this, SLOT(launchDialogAbout()));
+    QObject::connect(ui->btnHelp, SIGNAL(clicked()), this, SLOT(launchHelpLink()));
+
+
+    colorNames = this->getColorNameMap();
 }
 
 
@@ -115,23 +139,6 @@ void MainWindow::timerEvent(QTimerEvent *event)
 }
 
 
-void MainWindow::bootStrap()
-{
-    this->isPaused = false;
-
-    QShortcut *shortcutF5 = new QShortcut(QKeySequence("Ctrl+C"), this);
-    QObject::connect(shortcutF5,&QShortcut::activated,this,&MainWindow::handleCopyHex);
-
-    QShortcut *shortcutF6 = new QShortcut(QKeySequence("Ctrl+X"), this);
-    QObject::connect(shortcutF6,&QShortcut::activated,this,&MainWindow::handleCopyRgb);
-
-    QShortcut *shortcutF7 = new QShortcut(QKeySequence("P"), this);
-    QObject::connect(shortcutF7,&QShortcut::activated,this,&MainWindow::handlePause);
-
-    colorNames = this->getColorNameMap();
-}
-
-
 void MainWindow::handleCopyHex()
 {
     QClipboard* clipboard = QApplication::clipboard();
@@ -162,6 +169,22 @@ void MainWindow::handlePause()
     this->isPaused = !this->isPaused;
     qInfo() << QString("State:%1").arg( this->isPaused ? QString("Paused") : QString("Detecting"));
 
+}
+
+void MainWindow::exitApp()
+{
+    QApplication::exit();
+}
+
+void MainWindow::launchDialogAbout() {
+    DialogAbout*  about = new DialogAbout();
+    about->setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
+    about->show();
+    about->exec();
+}
+
+void MainWindow::launchHelpLink() {
+    QDesktopServices::openUrl(QUrl("https://github.com/gdarko/ColorPicker"));
 }
 
 QVariantMap * MainWindow::getColorNameMap()

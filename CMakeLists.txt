@@ -33,6 +33,7 @@ set(SOURCE_FILES
     src/qguiappcurrentscreen.cpp
     src/desktopinfo.cpp
     src/screengrabber.cpp
+    src/dialogabout.cpp
 )
 
 add_project_meta(META_FILES_TO_INCLUDE)

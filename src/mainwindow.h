@@ -31,6 +31,11 @@ private:
     bool isPaused;
     Ui::MainWindow *ui;
 
+private slots:
+    void exitApp();
+    void launchDialogAbout();
+    void launchHelpLink();
+
 protected:
     void timerEvent(QTimerEvent *event);
     void handleCopyHex();
