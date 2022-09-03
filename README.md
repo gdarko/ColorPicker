@@ -2,11 +2,23 @@
 
 ColorPicker is simple utility application useful if you want to obtain the color hexcode of anything on your desktop.
 
-Just open the application, hover on anything and press F5. The hexcode will be copied in your clipboard.
+Just open the application, hover on anything and press CTRL+C. The hexcode will be copied in your clipboard.
+
+![image](https://user-images.githubusercontent.com/5760249/188268716-6d6cddd7-06ff-4d70-a978-100fdaa01437.png)
+
+### Shortcuts
+
+| Shurtcout | Action                                    |
+|-----------|-------------------------------------------|
+| CTRL+C    | Copy the current hexcode                  |
+| CTRL+X    | Copy the current rgb code                 |
+| P         | Pause the detection, freezes the color    |
+| CTRL+G    | Grab the current screen for Wayland users |
+
 
 ### Requirements
 
-- Qt & C++
+- Supported Operating system (MacOS/Linux/Windows)
 
 
 ### Contributing
