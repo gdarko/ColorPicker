@@ -1,11 +1,8 @@
-
-
 #include "pointercolor.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
 #include <QMouseEvent>
-#include <QTextEdit>
 
 #include <QDebug>
 #include <QCursor>
@@ -17,16 +14,20 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QMap>
 #include <QWindow>
 #include <QApplication>
 #include <QScreen>
-#include <QVariantMap>
 #include <QDesktopServices>
 #include <QUrl>
 
 #include "dialogabout.h"
 #include "screengrabber.h"
+
+#if defined(Q_OS_LINUX)
+#include <QThread>
+#endif
+
+#define HELP_URL "https://github.com/gdarko/ColorPicker"
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -54,6 +55,7 @@ MainWindow::~MainWindow()
 void MainWindow::bootStrap()
 {
     this->isPaused = false;
+    this->isUnixWayland = ScreenGrabber().isWayland();
 
     QShortcut *shortcutCpyHex = new QShortcut(QKeySequence("Ctrl+C"), this);
     QObject::connect(shortcutCpyHex,&QShortcut::activated,this,&MainWindow::handleCopyHex);
@@ -64,12 +66,19 @@ void MainWindow::bootStrap()
     QShortcut *shortcutPause = new QShortcut(QKeySequence("P"), this);
     QObject::connect(shortcutPause,&QShortcut::activated,this,&MainWindow::handlePause);
 
-    QObject::connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(exitApp()));
-    QObject::connect(ui->btnAbout, SIGNAL(clicked()), this, SLOT(launchDialogAbout()));
-    QObject::connect(ui->btnHelp, SIGNAL(clicked()), this, SLOT(launchHelpLink()));
+    QShortcut *shortcutGrab = new QShortcut(QKeySequence("Ctrl+G"), this);
+    QObject::connect(shortcutGrab,&QShortcut::activated,this,&MainWindow::handleGrab);
 
+    QObject::connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(handleExitApp()));
+    QObject::connect(ui->btnAbout, SIGNAL(clicked()), this, SLOT(handleLaunchDialogAbout()));
+    QObject::connect(ui->btnHelp, SIGNAL(clicked()), this, SLOT(handleLaunchHelpLink()));
 
     colorNames = this->getColorNameMap();
+
+    if(this->isUnixWayland) {
+        const QString waylandInfo = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9.75pt;\">Press &quot;</span><span style=\" font-size:9.75pt; color:#2c974b;\">Ctrl + G</span><span style=\" font-size:9.75pt;\">&quot; to grab the screen if using Wayland</span></p>";
+        this->ui->textBrowser->append(waylandInfo);
+    }
 }
 
 
@@ -105,7 +114,15 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     QPoint globalCursorPos = QCursor::pos();
     screen = QGuiApplication::screenAt(globalCursorPos);
-    screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
+
+    if(this->isUnixWayland){
+        if(!screenshot) {
+            qInfo() << "Use the 'Ctrl+G' shortcut to grab the current screen";
+            return;
+        }
+    } else {
+        screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
+    }
 
     if(!ok) {
         qInfo() << "Unable to grab screen.";
@@ -171,20 +188,29 @@ void MainWindow::handlePause()
 
 }
 
-void MainWindow::exitApp()
+void MainWindow::handleGrab() {
+    bool ok = true;
+    QScreen* screen;
+
+    QPoint globalCursorPos = QCursor::pos();
+    screen = QGuiApplication::screenAt(globalCursorPos);
+    screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
+}
+
+void MainWindow::handleExitApp()
 {
     QApplication::exit();
 }
 
-void MainWindow::launchDialogAbout() {
+void MainWindow::handleLaunchDialogAbout() {
     DialogAbout*  about = new DialogAbout();
     about->setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     about->show();
     about->exec();
 }
 
-void MainWindow::launchHelpLink() {
-    QDesktopServices::openUrl(QUrl("https://github.com/gdarko/ColorPicker"));
+void MainWindow::handleLaunchHelpLink() {
+    QDesktopServices::openUrl(QUrl(HELP_URL));
 }
 
 QVariantMap * MainWindow::getColorNameMap()

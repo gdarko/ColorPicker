@@ -29,24 +29,25 @@ private:
     int mousePointy;
     int timerId;
     bool isPaused;
+    bool isUnixWayland;
     Ui::MainWindow *ui;
 
 private slots:
-    void exitApp();
-    void launchDialogAbout();
-    void launchHelpLink();
+    void handleExitApp();
+    void handleLaunchDialogAbout();
+    void handleLaunchHelpLink();
 
 protected:
     void timerEvent(QTimerEvent *event);
     void handleCopyHex();
     void handleCopyRgb();
     void handlePause();
+    void handleGrab();
     void bootStrap();
     QVariantMap * getColorNameMap();
     QPixmap screenshot;
     QVariantMap * colorNames;
 
     PointerColor * current;
-
 };
 #endif // MAINWINDOW_H

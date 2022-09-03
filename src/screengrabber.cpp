@@ -189,3 +189,11 @@ QRect ScreenGrabber::desktopGeometry()
     }
     return geometry;
 }
+
+bool ScreenGrabber::isWayland() {
+#if defined(Q_OS_LINUX) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
+    return (bool) m_info.waylandDetected();
+#else
+    return false;
+#endif
+}

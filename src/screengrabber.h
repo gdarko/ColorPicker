@@ -18,6 +18,7 @@ public:
     QPixmap grabScreen(QScreen* screenNumber, bool& ok);
     void freeDesktopPortal(bool& ok, QPixmap& res);
     QRect desktopGeometry();
+    bool isWayland();
 
 private:
     DesktopInfo m_info;
