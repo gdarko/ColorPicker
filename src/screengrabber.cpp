@@ -162,19 +162,19 @@ QRect ScreenGrabber::screenGeometry(QScreen* screen)
 
 QPixmap ScreenGrabber::grabScreen(QScreen* screen, bool& ok)
 {
-    QPixmap p;
-    QRect geometry = screenGeometry(screen);
     if (m_info.waylandDetected()) {
+        QPixmap p;
+
+        QRect geometry = screenGeometry(screen);
         p = grabEntireDesktop(ok);
         if (ok) {
             return p.copy(geometry);
         }
+        return p;
     } else {
         ok = true;
-        return screen->grabWindow(
-          0, geometry.x(), geometry.y(), geometry.width(), geometry.height());
+        return screen->grabWindow(0);
     }
-    return p;
 }
 
 QRect ScreenGrabber::desktopGeometry()

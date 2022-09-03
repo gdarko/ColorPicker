@@ -22,6 +22,7 @@
 
 #include "dialogabout.h"
 #include "dialogstartupinfo.h"
+#include "qguiappcurrentscreen.h"
 #include "screengrabber.h"
 
 #if defined(Q_OS_LINUX)
@@ -87,7 +88,7 @@ void MainWindow::bootStrap()
 void MainWindow::timerEvent(QTimerEvent *event)
 {
 
-    QPoint cursor = QCursor::pos();
+    QPoint globalCursorPos = QCursor::pos();
 
     if(this->isPaused) {
         qInfo() << "Prevented detection: Paused.";
@@ -99,34 +100,33 @@ void MainWindow::timerEvent(QTimerEvent *event)
         return;
     }
 
-    if(this->frameGeometry().contains(cursor)) {
+    if(this->frameGeometry().contains(globalCursorPos)) {
         qInfo() << "Prevented detection: Cursor in main window.";
         return;
     }
 
     if(mousePointx && mousePointy ) {
-        if(mousePointx == cursor.x() && mousePointy == cursor.y()) {
+        if(mousePointx == globalCursorPos.x() && mousePointy == globalCursorPos.y()) {
             //qInfo() << "Prevented detection: Cursor idle.";
             return;
         }
     }
 
-    bool ok = true;
-    QScreen* screen;
+    QScreen* screen = QGuiAppCurrentScreen().currentScreen();
+    QRect mouseScreenGeometry = screen->geometry();
+    QPoint localCursorPos = globalCursorPos - mouseScreenGeometry.topLeft();
 
-    QPoint globalCursorPos = QCursor::pos();
-    screen = QGuiApplication::screenAt(globalCursorPos);
-
+    bool screenObtained = true;
     if(this->isUnixWayland){
         if(!screenshot) {
             qInfo() << "Use the 'Ctrl+G' shortcut to grab the current screen";
             return;
         }
     } else {
-        screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
+        screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, screenObtained));
     }
 
-    if(!ok) {
+    if(!screenObtained) {
         qInfo() << "Unable to grab screen.";
         return;
 
@@ -134,12 +134,12 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
     qreal pixelRatio = screen->devicePixelRatio();
 
-    mousePointx = cursor.x() * pixelRatio;
-    mousePointy = cursor.y() * pixelRatio;
+    mousePointx = localCursorPos.x() * pixelRatio;
+    mousePointy = localCursorPos.y() * pixelRatio;
 
     QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
-    this->current = new PointerColor(cursor, rgbValue, this->colorNames);
+    this->current = new PointerColor(globalCursorPos, rgbValue, this->colorNames);
 
     ui->posX->document()->setPlainText(this->current->cursorX);
     ui->posY->document()->setPlainText(this->current->cursorY);

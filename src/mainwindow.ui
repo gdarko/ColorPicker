@@ -223,7 +223,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Color</string>
+      <string>Name</string>
      </property>
     </widget>
     <widget class="QTextEdit" name="colorName">
