@@ -1,6 +1,6 @@
 # ColorPicker
 
-ColorPicker is simple utility application useful if you want to obtain the color hexcode of anything on your desktop.
+ColorPicker is simple crossplatform application for obtaining the color hexcode of anything on your screen.
 
 Just open the application, hover on anything and press CTRL+C. The hexcode will be copied in your clipboard.
 
@@ -10,8 +10,8 @@ Just open the application, hover on anything and press CTRL+C. The hexcode will 
 
 | Shurtcout | Action                                    |
 |-----------|-------------------------------------------|
-| CTRL+C    | Copy the current hexcode                  |
-| CTRL+X    | Copy the current rgb code                 |
+| CTRL+C    | Copy the current HEX code                 |
+| CTRL+X    | Copy the current RGB code                 |
 | P         | Pause the detection, freezes the color    |
 | CTRL+G    | Grab the current screen for Wayland users |
 
