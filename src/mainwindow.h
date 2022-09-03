@@ -36,6 +36,7 @@ private slots:
     void handleExitApp();
     void handleLaunchDialogAbout();
     void handleLaunchHelpLink();
+    void displayWaylandInfoDialog();
 
 protected:
     void timerEvent(QTimerEvent *event);

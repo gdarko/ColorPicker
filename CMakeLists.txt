@@ -36,6 +36,7 @@ if (UNIX AND NOT APPLE)
             src/desktopinfo.cpp
             src/screengrabber.cpp
             src/dialogabout.cpp
+            src/dialogstartupinfo.cpp
             src/request.cpp
             )
 else ()
@@ -47,6 +48,7 @@ else ()
             src/desktopinfo.cpp
             src/screengrabber.cpp
             src/dialogabout.cpp
+            src/dialogstartupinfo.cpp
             )
 endif ()
 

@@ -21,6 +21,7 @@
 #include <QUrl>
 
 #include "dialogabout.h"
+#include "dialogstartupinfo.h"
 #include "screengrabber.h"
 
 #if defined(Q_OS_LINUX)
@@ -76,8 +77,9 @@ void MainWindow::bootStrap()
     colorNames = this->getColorNameMap();
 
     if(this->isUnixWayland) {
-        const QString waylandInfo = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9.75pt;\">Press &quot;</span><span style=\" font-size:9.75pt; color:#2c974b;\">Ctrl + G</span><span style=\" font-size:9.75pt;\">&quot; to grab the screen if using Wayland</span></p>";
+        const QString waylandInfo = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9.75pt;\">Press &quot;</span><span style=\" font-size:9.75pt; color:#2c974b;\">Ctrl + G</span><span style=\" font-size:9.75pt;\">&quot; to grab the screen (wayland)</span></p>";
         this->ui->textBrowser->append(waylandInfo);
+        this->displayWaylandInfoDialog();
     }
 }
 
@@ -211,6 +213,14 @@ void MainWindow::handleLaunchDialogAbout() {
 
 void MainWindow::handleLaunchHelpLink() {
     QDesktopServices::openUrl(QUrl(HELP_URL));
+}
+
+void MainWindow::displayWaylandInfoDialog() {
+    DialogStartupInfo * dialog = new DialogStartupInfo();
+    dialog->setDialogTitle(QString("Attention!"));
+    dialog->setDialogDescription(QString("We detected that your system uses Wayland desktop server which is more restrictive and this alters the way how it works.\n\nWhen using Wayland, you need to manually grab the screen using CTRL+G shortcut while focused on the ColorPicker window before you find/copy/detect the actual color.\n\nOn the other environments our app will grab the screen automatically and you only need to find/copy the color code."));
+    dialog->show();
+    dialog->exec();
 }
 
 QVariantMap * MainWindow::getColorNameMap()
