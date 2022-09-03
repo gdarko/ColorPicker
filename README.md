@@ -16,10 +16,15 @@ Just open the application, hover on anything and press CTRL+C. The hexcode will 
 | CTRL+G    | Grab the current screen for Wayland users |
 
 
-### Requirements
+### Usage Requirements
 
 - Supported Operating system (MacOS/Linux/Windows)
+- If using OSX, make sure you give it permission in "Security & Privacy > Screen recording"
 
+### Building Requirements
+
+- Qt 6.3+
+- CMake 3.16+
 
 ### Contributing
 
