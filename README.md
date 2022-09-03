@@ -8,7 +8,7 @@ Just open the application, hover on anything and press CTRL+C. The hexcode will 
 
 ### Shortcuts
 
-| Shurtcout | Action                                    |
+| Shortcut | Action                                     |
 |-----------|-------------------------------------------|
 | CTRL+C    | Copy the current HEX code                 |
 | CTRL+X    | Copy the current RGB code                 |
@@ -19,7 +19,8 @@ Just open the application, hover on anything and press CTRL+C. The hexcode will 
 ### Usage Requirements
 
 - Supported Operating system (MacOS/Linux/Windows)
-- If using OSX, make sure you give it permission in "Security & Privacy > Screen recording"
+- Apple/OSX: Allow permission -> "Security & Privacy > Screen recording"
+- Wayland: Users that use Linux's Wayland Display Server needs to use "CTRL + G" shortcut to grab screenshot first and then use the mouse to detect the color.
 
 ### Building Requirements
 
