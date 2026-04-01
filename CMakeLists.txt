@@ -37,6 +37,7 @@ if (UNIX AND NOT APPLE)
             src/screengrabber.cpp
             src/dialogabout.cpp
             src/dialogstartupinfo.cpp
+            src/waylandoverlay.cpp
             src/request.cpp
             )
 else ()

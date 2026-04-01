@@ -12,8 +12,14 @@
 #if defined(Q_OS_LINUX)
 #include "request.h"
 #include <QDBusInterface>
+#include <QDBusMessage>
 #include <QDBusReply>
+#include <QDBusUnixFileDescriptor>
 #include <QDir>
+#include <QFile>
+#include <QProcess>
+#include <QStandardPaths>
+#include <QTemporaryFile>
 #include <QUrl>
 #include <QUuid>
 #endif
@@ -43,7 +49,7 @@ void ScreenGrabber::freeDesktopPortal(bool& ok, QPixmap& res)
                                                                         '_') +
         "/" + token,
       QDBusConnection::sessionBus(),
-      this);
+      nullptr);
 
     QEventLoop loop;
     const auto gotSignal = [&res, &loop](uint status, const QVariantMap& map) {
@@ -72,7 +78,7 @@ void ScreenGrabber::freeDesktopPortal(bool& ok, QPixmap& res)
     loop.exec();
     QObject::disconnect(conn);
     request->Close().waitForFinished();
-    request->deleteLater();
+    delete request;
 
     if (res.isNull()) {
         ok = false;
@@ -95,22 +101,20 @@ QPixmap ScreenGrabber::grabEntireDesktop(bool& ok)
 #elif defined(Q_OS_LINUX) || defined(Q_OS_UNIX)
     if (m_info.waylandDetected()) {
         QPixmap res;
-        // handle screenshot based on DE
-        switch (m_info.windowManager()) {
-            case DesktopInfo::GNOME:
-            case DesktopInfo::KDE:
-            case DesktopInfo::SWAY: {
-                freeDesktopPortal(ok, res);
-                break;
+        // On KDE, try KWin's native screenshot API (silent, no dialog)
+        if (m_info.windowManager() == DesktopInfo::KDE) {
+            if (kwinCapture(ok, res)) {
+                return res;
             }
-            default:
-                ok = false;
-                qInfo() << "Unable to detect desktop environment (GNOME? KDE? "
-                           "Sway? ...)";
-                qInfo() << "Hint: try setting the XDG_CURRENT_DESKTOP environment "
-                               "variable.";
-                break;
+            qDebug() << "KWin capture not available, trying fallbacks";
         }
+        // Try fallback screenshot tools (silent, no dialog)
+        if (fallbackCapture(ok, res)) {
+            return res;
+        }
+        // Fall back to D-Bus portal (may show permission dialog)
+        ok = true;
+        freeDesktopPortal(ok, res);
         if (!ok) {
            qInfo() << "Unable to capture screen";
         }
@@ -194,6 +198,221 @@ bool ScreenGrabber::isWayland() {
 #if defined(Q_OS_LINUX) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     return (bool) m_info.waylandDetected();
 #else
+    return false;
+#endif
+}
+
+QString ScreenGrabber::findFallbackTool()
+{
+#if defined(Q_OS_LINUX)
+    static const QStringList tools = {
+        QStringLiteral("grim"),
+        QStringLiteral("spectacle"),
+        QStringLiteral("gnome-screenshot"),
+        QStringLiteral("flameshot")
+    };
+    for (const auto& tool : tools) {
+        QString path = QStandardPaths::findExecutable(tool);
+        if (!path.isEmpty()) {
+            return tool;
+        }
+    }
+#endif
+    return QString();
+}
+
+bool ScreenGrabber::hasFallbackTools()
+{
+    if (!m_fallbackToolScanned) {
+        m_cachedFallbackTool = findFallbackTool();
+        m_fallbackToolScanned = true;
+    }
+    return !m_cachedFallbackTool.isEmpty();
+}
+
+QString ScreenGrabber::detectedFallbackTool()
+{
+    if (!m_fallbackToolScanned) {
+        m_cachedFallbackTool = findFallbackTool();
+        m_fallbackToolScanned = true;
+    }
+    return m_cachedFallbackTool;
+}
+
+bool ScreenGrabber::executeScreenshotTool(const QString& tool, const QString& outputPath, bool& ok, QPixmap& res)
+{
+#if defined(Q_OS_LINUX)
+    QProcess process;
+    process.setProcessChannelMode(QProcess::MergedChannels);
+
+    if (tool == QStringLiteral("grim")) {
+        process.start(QStringLiteral("grim"), { outputPath });
+    } else if (tool == QStringLiteral("spectacle")) {
+        process.start(QStringLiteral("spectacle"), { QStringLiteral("-bn"), QStringLiteral("-o"), outputPath });
+    } else if (tool == QStringLiteral("gnome-screenshot")) {
+        process.start(QStringLiteral("gnome-screenshot"), { QStringLiteral("-f"), outputPath });
+    } else if (tool == QStringLiteral("flameshot")) {
+        // flameshot outputs raw PNG to stdout
+        process.start(QStringLiteral("flameshot"), { QStringLiteral("full"), QStringLiteral("--raw") });
+    } else {
+        ok = false;
+        return false;
+    }
+
+    if (!process.waitForFinished(5000)) {
+        qInfo() << "Screenshot tool" << tool << "timed out";
+        ok = false;
+        return false;
+    }
+
+    if (process.exitCode() != 0) {
+        qInfo() << "Screenshot tool" << tool << "failed with exit code" << process.exitCode();
+        ok = false;
+        return false;
+    }
+
+    if (tool == QStringLiteral("flameshot")) {
+        QByteArray data = process.readAllStandardOutput();
+        if (!res.loadFromData(data, "PNG")) {
+            qInfo() << "Failed to load screenshot from flameshot stdout";
+            ok = false;
+            return false;
+        }
+    } else {
+        res = QPixmap(outputPath);
+        if (res.isNull()) {
+            qInfo() << "Failed to load screenshot from" << outputPath;
+            ok = false;
+            return false;
+        }
+    }
+
+    res.setDevicePixelRatio(qApp->devicePixelRatio());
+    ok = true;
+    return true;
+#else
+    Q_UNUSED(tool)
+    Q_UNUSED(outputPath)
+    ok = false;
+    return false;
+#endif
+}
+
+bool ScreenGrabber::fallbackCapture(bool& ok, QPixmap& res)
+{
+#if defined(Q_OS_LINUX)
+    if (!hasFallbackTools()) {
+        return false;
+    }
+
+    static const QStringList tools = {
+        QStringLiteral("grim"),
+        QStringLiteral("spectacle"),
+        QStringLiteral("gnome-screenshot"),
+        QStringLiteral("flameshot")
+    };
+
+    for (const auto& tool : tools) {
+        if (QStandardPaths::findExecutable(tool).isEmpty())
+            continue;
+
+        QString tempPath;
+
+        // flameshot reads from stdout, no temp file needed
+        if (tool != QStringLiteral("flameshot")) {
+            QTemporaryFile tmpFile(QDir::tempPath() + QStringLiteral("/colorpicker_XXXXXX.png"));
+            tmpFile.setAutoRemove(false);
+            if (!tmpFile.open())
+                continue;
+            tempPath = tmpFile.fileName();
+            tmpFile.close();
+        }
+
+        if (executeScreenshotTool(tool, tempPath, ok, res)) {
+            if (!tempPath.isEmpty())
+                QFile::remove(tempPath);
+            return true;
+        }
+
+        // Clean up temp file on failure before trying next tool
+        if (!tempPath.isEmpty())
+            QFile::remove(tempPath);
+    }
+
+    return false;
+#else
+    Q_UNUSED(ok)
+    Q_UNUSED(res)
+    return false;
+#endif
+}
+
+bool ScreenGrabber::kwinCapture(bool& ok, QPixmap& res)
+{
+#if defined(Q_OS_LINUX)
+    // Create a temp file for KWin to write the screenshot into
+    QTemporaryFile tmpFile;
+    if (!tmpFile.open()) {
+        ok = false;
+        return false;
+    }
+
+    // KWin ScreenShot2 expects the CALLER to provide a writable fd
+    QDBusUnixFileDescriptor dbusWriteFd(tmpFile.handle());
+
+    QDBusMessage msg = QDBusMessage::createMethodCall(
+        QStringLiteral("org.kde.KWin"),
+        QStringLiteral("/org/kde/KWin/ScreenShot2"),
+        QStringLiteral("org.kde.KWin.ScreenShot2"),
+        QStringLiteral("CaptureWorkspace"));
+
+    QVariantMap options;
+    options[QStringLiteral("include-cursor")] = false;
+    options[QStringLiteral("native-resolution")] = true;
+
+    msg << QVariant::fromValue(options) << QVariant::fromValue(dbusWriteFd);
+
+    QDBusMessage reply = QDBusConnection::sessionBus().call(msg, QDBus::Block, 5000);
+    if (reply.type() != QDBusMessage::ReplyMessage) {
+        ok = false;
+        return false;
+    }
+
+    // Reply contains raw image metadata: width, height, stride, format
+    QVariantMap resultMap = reply.arguments().first().value<QVariantMap>();
+    uint width = resultMap[QStringLiteral("width")].toUInt();
+    uint height = resultMap[QStringLiteral("height")].toUInt();
+    uint stride = resultMap[QStringLiteral("stride")].toUInt();
+    uint format = resultMap[QStringLiteral("format")].toUInt();
+
+    if (width == 0 || height == 0 || stride == 0) {
+        ok = false;
+        return false;
+    }
+
+    // Read raw pixel data written by KWin
+    tmpFile.seek(0);
+    QByteArray rawData = tmpFile.readAll();
+    tmpFile.close();
+
+    if (rawData.isEmpty()) {
+        ok = false;
+        return false;
+    }
+
+    // Construct QImage from raw pixel data using KWin's metadata
+    QImage img(reinterpret_cast<const uchar*>(rawData.constData()),
+               width, height, stride,
+               static_cast<QImage::Format>(format));
+    img = img.copy(); // deep copy before rawData goes out of scope
+
+    res = QPixmap::fromImage(img);
+    res.setDevicePixelRatio(qApp->devicePixelRatio());
+    ok = true;
+    return true;
+#else
+    Q_UNUSED(ok)
+    Q_UNUSED(res)
     return false;
 #endif
 }

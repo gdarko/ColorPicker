@@ -20,6 +20,16 @@ public:
     QRect desktopGeometry();
     bool isWayland();
 
+    bool hasFallbackTools();
+    QString detectedFallbackTool();
+    bool fallbackCapture(bool& ok, QPixmap& res);
+
 private:
     DesktopInfo m_info;
+
+    QString findFallbackTool();
+    bool executeScreenshotTool(const QString& tool, const QString& outputPath, bool& ok, QPixmap& res);
+    bool kwinCapture(bool& ok, QPixmap& res);
+    QString m_cachedFallbackTool;
+    bool m_fallbackToolScanned = false;
 };

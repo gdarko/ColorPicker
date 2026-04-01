@@ -8,6 +8,7 @@
 #include <QCursor>
 #include <QPixmap>
 #include <QColor>
+#include <QTimer>
 #include <QShortcut>
 #include <QClipboard>
 #include <QPalette>
@@ -24,6 +25,7 @@
 #include "dialogstartupinfo.h"
 #include "qguiappcurrentscreen.h"
 #include "screengrabber.h"
+#include "waylandoverlay.h"
 
 #if defined(Q_OS_LINUX)
 #include <QThread>
@@ -78,15 +80,23 @@ void MainWindow::bootStrap()
     colorNames = this->getColorNameMap();
 
     if(this->isUnixWayland) {
-        const QString waylandInfo = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9.75pt;\">Press &quot;</span><span style=\" font-size:9.75pt; color:#2c974b;\">Ctrl + G</span><span style=\" font-size:9.75pt;\">&quot; to grab the screen (wayland)</span></p>";
+        ScreenGrabber grabber;
+        m_waylandHasFallbackTools = grabber.hasFallbackTools();
+
+        const QString waylandInfo = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9.75pt;\">Press &quot;</span><span style=\" font-size:9.75pt; color:#2c974b;\">Ctrl + G</span><span style=\" font-size:9.75pt;\">&quot; to pick a color (wayland)</span></p>";
         this->ui->textBrowser->append(waylandInfo);
-        this->displayWaylandInfoDialog();
     }
 }
 
 
 void MainWindow::timerEvent(QTimerEvent *event)
 {
+    // On Wayland, QCursor::pos() only updates when the cursor is over our
+    // own window (compositor security). Color picking is handled by the
+    // fullscreen overlay (auto-shown on startup, or via Ctrl+G).
+    if(this->isUnixWayland) {
+        return;
+    }
 
     QPoint globalCursorPos = QCursor::pos();
 
@@ -101,7 +111,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
     }
 
     if(this->frameGeometry().contains(globalCursorPos)) {
-        qInfo() << "Prevented detection: Cursor in main window.";
+        qInfo() << "cursor=" << globalCursorPos << "frame=" << this->frameGeometry();
         return;
     }
 
@@ -112,32 +122,24 @@ void MainWindow::timerEvent(QTimerEvent *event)
         }
     }
 
-    QScreen* screen = QGuiAppCurrentScreen().currentScreen();
-    QRect mouseScreenGeometry = screen->geometry();
-    QPoint localCursorPos = globalCursorPos - mouseScreenGeometry.topLeft();
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return;
+    }
 
-    bool screenObtained = true;
-    if(this->isUnixWayland){
-        if(!screenshot) {
-            qInfo() << "Use the 'Ctrl+G' shortcut to grab the current screen";
+    QRgb rgbValue;
+    {
+        // grabWindow(0) grabs from the root window, which spans all monitors
+        // and uses global coordinates directly.
+        QPixmap pixel = screen->grabWindow(0, globalCursorPos.x(), globalCursorPos.y(), 1, 1);
+        if (pixel.isNull()) {
+            qInfo() << "Unable to grab pixel.";
             return;
         }
-    } else {
-        screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, screenObtained));
+        mousePointx = globalCursorPos.x();
+        mousePointy = globalCursorPos.y();
+        rgbValue = pixel.toImage().pixel(0, 0);
     }
-
-    if(!screenObtained) {
-        qInfo() << "Unable to grab screen.";
-        return;
-
-    }
-
-    qreal pixelRatio = screen->devicePixelRatio();
-
-    mousePointx = localCursorPos.x() * pixelRatio;
-    mousePointy = localCursorPos.y() * pixelRatio;
-
-    QRgb rgbValue = screenshot.toImage().pixel(mousePointx, mousePointy);
 
     this->current = new PointerColor(globalCursorPos, rgbValue, this->colorNames);
 
@@ -191,12 +193,101 @@ void MainWindow::handlePause()
 }
 
 void MainWindow::handleGrab() {
+    if (this->isUnixWayland) {
+        m_waylandInitialCaptureFailed = false;
+        showWaylandOverlay();
+        return;
+    }
     bool ok = true;
     QScreen* screen;
 
     QPoint globalCursorPos = QCursor::pos();
     screen = QGuiApplication::screenAt(globalCursorPos);
-    screenshot =  QPixmap(ScreenGrabber().grabScreen(screen, ok));
+    screenshot = QPixmap(ScreenGrabber().grabScreen(screen, ok));
+    m_screenshotDirty = true;
+}
+
+void MainWindow::showWaylandOverlay()
+{
+    if (m_waylandOverlay) {
+        m_waylandOverlay->close();
+        m_waylandOverlay->deleteLater();
+        m_waylandOverlay = nullptr;
+    }
+
+    bool ok = true;
+    ScreenGrabber grabber;
+    QPixmap grab = grabber.grabEntireDesktop(ok);
+    if (!ok || grab.isNull()) {
+        qInfo() << "Failed to capture screen for overlay";
+        return;
+    }
+
+    m_waylandOverlay = new WaylandOverlay(grab, nullptr);
+    connect(m_waylandOverlay, &WaylandOverlay::colorPicked,
+            this, &MainWindow::onWaylandColorPicked);
+    connect(m_waylandOverlay, &WaylandOverlay::cancelled,
+            this, [this]() {
+                m_waylandOverlay->deleteLater();
+                m_waylandOverlay = nullptr;
+                this->showNormal();
+                this->raise();
+                this->activateWindow();
+            });
+    m_waylandOverlay->showFullScreen();
+}
+
+void MainWindow::onWaylandColorPicked(const QColor& color, const QPoint& pos)
+{
+    QPoint cursorPos = pos;
+    QRgb rgbValue = color.rgb();
+    this->current = new PointerColor(cursorPos, rgbValue, this->colorNames);
+
+    ui->posX->document()->setPlainText(this->current->cursorX);
+    ui->posY->document()->setPlainText(this->current->cursorY);
+    ui->numR->document()->setPlainText(this->current->colorRed);
+    ui->numG->document()->setPlainText(this->current->colorGreen);
+    ui->numB->document()->setPlainText(this->current->colorBlue);
+    ui->hexCode->document()->setPlainText(this->current->colorHex);
+    ui->colorName->document()->setPlainText(this->current->colorName);
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, rgbValue);
+    ui->colorBox->setPalette(pal);
+    ui->colorBox->setAutoFillBackground(true);
+    ui->colorBox->show();
+
+    m_waylandOverlay->deleteLater();
+    m_waylandOverlay = nullptr;
+
+    this->showNormal();
+    this->raise();
+    this->activateWindow();
+}
+
+void MainWindow::waylandAutoRefresh()
+{
+    QPoint currentPos = QCursor::pos();
+
+    // Don't refresh if cursor hasn't moved since last refresh
+    if (currentPos == m_lastRefreshCursorPos) {
+        m_waylandRefreshCounter = 0;
+        return;
+    }
+
+    m_waylandRefreshCounter++;
+    if (m_waylandRefreshCounter >= WAYLAND_REFRESH_TICKS) {
+        m_waylandRefreshCounter = 0;
+        m_lastRefreshCursorPos = currentPos;
+
+        bool ok = true;
+        ScreenGrabber grabber;
+        QPixmap newScreenshot = grabber.grabEntireDesktop(ok);
+        if (ok && !newScreenshot.isNull()) {
+            screenshot = newScreenshot;
+            m_screenshotDirty = true;
+        }
+    }
 }
 
 void MainWindow::handleExitApp()

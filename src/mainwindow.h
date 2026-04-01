@@ -8,8 +8,11 @@
 #include <QMainWindow>
 #include <QTimerEvent>
 #include <QPixmap>
+#include <QImage>
 #include <QString>
 #include <QVariantMap>
+
+class WaylandOverlay;
 
 
 QT_BEGIN_NAMESPACE
@@ -30,6 +33,13 @@ private:
     int timerId;
     bool isPaused;
     bool isUnixWayland;
+    bool m_waylandHasFallbackTools = false;
+    bool m_waylandInitialCaptureFailed = false;
+    int m_waylandRefreshCounter = 0;
+    QPoint m_lastRefreshCursorPos;
+    static const int WAYLAND_REFRESH_TICKS = 37; // ~3 seconds (37 * 80ms)
+    QImage m_cachedImage;
+    bool m_screenshotDirty = true;
     Ui::MainWindow *ui;
 
 private slots:
@@ -45,9 +55,13 @@ protected:
     void handlePause();
     void handleGrab();
     void bootStrap();
+    void waylandAutoRefresh();
+    void showWaylandOverlay();
+    void onWaylandColorPicked(const QColor& color, const QPoint& pos);
     QVariantMap * getColorNameMap();
     QPixmap screenshot;
     QVariantMap * colorNames;
+    WaylandOverlay* m_waylandOverlay = nullptr;
 
     PointerColor * current;
 };

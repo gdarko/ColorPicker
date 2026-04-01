@@ -3,6 +3,7 @@
 // Adopted from Flameshoot to support Qt6
 
 #include "desktopinfo.h"
+#include <QGuiApplication>
 #include <QProcessEnvironment>
 
 DesktopInfo::DesktopInfo()
@@ -19,9 +20,9 @@ DesktopInfo::DesktopInfo()
 
 bool DesktopInfo::waylandDetected()
 {
-    return XDG_SESSION_TYPE == QLatin1String("wayland") ||
-           WAYLAND_DISPLAY.contains(QLatin1String("wayland"),
-                                    Qt::CaseInsensitive);
+    // Check the actual Qt platform backend, not just environment variables.
+    // Returns false when running under XWayland (platform is "xcb").
+    return QGuiApplication::platformName() == QLatin1String("wayland");
 }
 
 DesktopInfo::WM DesktopInfo::windowManager()
